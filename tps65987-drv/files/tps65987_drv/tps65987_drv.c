@@ -112,14 +112,9 @@ static int i2c_open(unsigned char i2c_addr)
 
     printf("i2c: set i2c retry times %d\n",val);
 
-    val = 2;
-    ret = ioctl(fd, I2C_TIMEOUT, val);
-    if(ret < 0)
-    {
-        printf("i2c: set i2c timeout err\n");
-    }
-
-    printf("i2c: set i2c timeout %d\n",val);
+    /*
+    * use I2C_TIMEOUT default setting, which is HZ, that means 1 second
+    */
 
     return 0;
 }
@@ -262,14 +257,21 @@ int tps65987_i2c_read(int fd, unsigned char addr, unsigned char reg, unsigned ch
 
 int tps65987_send_4CC_Cmd(unsigned char *cmd_ptr, unsigned char *cmd_data_ptr, unsigned char cmd_data_length)
 {
+    int ret;
     int i;
 
     unsigned char val[4] = {0};
 
     //first write 4CC Cmd Used Data(if any)
-    if(cmd_data_ptr != 0)
+    if(cmd_data_ptr != NULL)
     {
-        tps65987_i2c_write(fd, I2C_ADDR, 0x09, cmd_data_ptr, cmd_data_length);
+        ret = tps65987_i2c_write(fd, I2C_ADDR, 0x09, cmd_data_ptr, cmd_data_length);
+
+        if(ret != 0)
+        {
+            printf("write 4CC Cmd Used Data err \n");
+            return 1;
+        }
     }
 
     val[0] = cmd_ptr[0];
@@ -346,16 +348,27 @@ int tps65987_exec_4CC_Cmd(unsigned char *cmd_ptr, unsigned char *cmd_data_in_ptr
         return 1;
     }
 
-    if(tps65987_check_4CC_Cmd_executed() != 0)
+    if( strcmp(cmd_ptr,"Gaid") == 0 || strcmp(cmd_ptr,"GAID") == 0 )
     {
-        printf("4CC_Cmd exec err\n");
-        return 1;
+        //Technically this command never completes since the processor restarts
+    }
+    else
+    {
+        if(tps65987_check_4CC_Cmd_executed() != 0)
+        {
+            printf("4CC_Cmd exec err\n");
+            return 1;
+        }
     }
 
-    if(tps65987_read_4CC_Cmd_exec_output(cmd_data_out_ptr, cmd_data_out_length) != 0)
+
+    if(cmd_data_out_ptr != NULL)
     {
-        printf("read 4CC_Cmd exec output err\n");
-        return 1;
+        if(tps65987_read_4CC_Cmd_exec_output(cmd_data_out_ptr, cmd_data_out_length) != 0)
+        {
+            printf("read 4CC_Cmd exec output err\n");
+            return 1;
+        }
     }
 
     return 0;
@@ -398,6 +411,7 @@ int tps65987_host_patch_bundle(void)
 static int PreOpsForFlashUpdate(void);
 static int StartFlashUpdate(void);
 static int UpdateAndVerifyRegion(unsigned char region_number);
+static int ResetPDController();
 
 
 static int PreOpsForFlashUpdate(void)
@@ -422,10 +436,10 @@ static int PreOpsForFlashUpdate(void)
 
     p_bootflags = (s_TPS_bootflag *)&buf[0];
 
-    printf("TPS_bootflag = 0x%08x\n", p_bootflags->word32);
-    printf("test TPS_bootflag %x\n", p_bootflags->Bits.SpiFlashPresent);
+    printf("TPS_bootflag = 0x%08x\n", *((unsigned int *)p_bootflags));
+    printf("test TPS_bootflag %x\n", p_bootflags->SpiFlashPresent);
 
-    if(p_bootflags->Bits.PatchHeaderErr != 0)
+    if(p_bootflags->PatchHeaderErr != 0)
     {
         printf("PatchHeaderErr\n");
         return 1;
@@ -436,18 +450,18 @@ static int PreOpsForFlashUpdate(void)
     * Region1 = 0 indicates that device didn't attempt 'Region1',
     * which implicitly means that the content at Region0 is valid/active
     */
-    if(p_bootflags->Bits.Region1 == 0)
+    if(p_bootflags->Region1 == 0)
     {
         flash_upgrade_para.active_region = REGION_0;
         flash_upgrade_para.inactive_region = REGION_1;
 
         printf("flash_upgrade_para inactive_region is REGION_1, %d\n", flash_upgrade_para.inactive_region);
     }
-    else if ( (p_bootflags->Bits.Region1 == 1) && \
-              (p_bootflags->Bits.Region0 == 1) && \
-              ((p_bootflags->Bits.Region1CrcFail == 0) && \
-               (p_bootflags->Bits.Region1FlashErr == 0) && \
-               (p_bootflags->Bits.Region1Invalid == 0)) )
+    else if ( (p_bootflags->Region1 == 1) && \
+              (p_bootflags->Region0 == 1) && \
+              ((p_bootflags->Region1CrcFail == 0) && \
+               (p_bootflags->Region1FlashErr == 0) && \
+               (p_bootflags->Region1Invalid == 0)) )
     {
         flash_upgrade_para.active_region = REGION_1;
         flash_upgrade_para.inactive_region = REGION_0;
@@ -458,6 +472,11 @@ static int PreOpsForFlashUpdate(void)
     {
         printf("Region Check Err\n");
         return 1;
+
+        //need further debug 
+        /*printf("force upgrade REGION_0\n");
+        flash_upgrade_para.active_region = REGION_1;
+        flash_upgrade_para.inactive_region = REGION_0;*/
     }
 
     /*
@@ -467,11 +486,10 @@ static int PreOpsForFlashUpdate(void)
 
     p_portconfig = (s_TPS_portconfig *)&buf[0];
 
-    printf("TPS_portconfig = 0x%04x\n", p_portconfig->word16);
-    printf("test TPS_portconfig %x\n", p_portconfig->Bits.TypeCStateMachine);
+    printf("TPS_portconfig = 0x%04x\n", *((unsigned int *)p_portconfig));
+    printf("test TPS_portconfig %x\n", p_portconfig->TypeCStateMachine);
 
-
-    p_portconfig->Bits.TypeCStateMachine = DISABLE_PORT;
+    p_portconfig->TypeCStateMachine = DISABLE_PORT;
 
     tps65987_i2c_write(fd, I2C_ADDR, REG_PORTCONFIG, buf, 8);
 
@@ -507,15 +525,17 @@ static int StartFlashUpdate(void)
     * To maintain a redundant copy for a fail-safe flash-update, copy the same
     * content at Region-0
     */
-    //commen for temp
-    /*retVal = UpdateAndVerifyRegion(flash_upgrade_para.active_region);
+    printf("Region-%d is successfully updated.To maintain a redundant copy for a fail-safe flash-update, \
+    copy the same content at Region-%d",flash_upgrade_para.inactive_region,flash_upgrade_para.active_region);
+
+    retVal = UpdateAndVerifyRegion(flash_upgrade_para.active_region);
     if(retVal != 0)
     {
         printf("Region[%d] update failed.! Next boot will happen from Region[%d]\n\r",\
                flash_upgrade_para.active_region, flash_upgrade_para.inactive_region);
         retVal = 0;
         goto error;
-    }*/
+    }
 
 error:
     //add some operation if need, maybe
@@ -695,6 +715,29 @@ static int UpdateAndVerifyRegion(unsigned char region_number)
     return 0;
 }
 
+static int ResetPDController()
+{
+    unsigned char buf[64] = {0};
+    int retVal = -1;
+
+    /*
+    * Execute GAID, and wait for reset to complete
+    */
+    printf("Send GAID and Waiting for device to reset\n\r");
+    tps65987_exec_4CC_Cmd("GAID", NULL, 0, NULL, 0);
+
+    usleep(1000000);
+
+    //read Mode
+    tps65987_i2c_read(fd, I2C_ADDR, REG_MODE, buf, 4);
+
+    tps65987_i2c_read(fd, I2C_ADDR, REG_Version, buf, 4);
+
+    tps65987_i2c_read(fd, I2C_ADDR, REG_BootFlags, buf, 12);
+
+    return 0;
+}
+
 
 int tps65987_ext_flash_upgrade(void)
 {
@@ -765,6 +808,8 @@ int main(int argc, char* argv[])
 
     //buf[0] = 0x00;
     //tps65987_exec_4CC_Cmd("FLrr", buf, 1, buf_2, 4);
+
+    ResetPDController();
 
     close(fd);
 
