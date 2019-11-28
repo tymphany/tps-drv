@@ -27,7 +27,7 @@
 unsigned int I2C_ADDR = 0x38;
 
 //supposed to be Little-endian
-unsigned int check_endian(void)
+int check_endian(void)
 {
     unsigned int x;
     unsigned char x0,x1,x2,x3;
@@ -74,7 +74,7 @@ struct FLASH_UPGRADE_PARA
 } flash_upgrade_para;
 
 
-int fd;
+static int fd;
 
 
 static int i2c_open(unsigned char i2c_addr)
@@ -89,7 +89,7 @@ static int i2c_open(unsigned char i2c_addr)
     {
         perror("Unable to open i2c control file");
 
-        return 1;
+        return -1;
     }
 
     printf("open i2c file success %d\n",fd);
@@ -98,7 +98,7 @@ static int i2c_open(unsigned char i2c_addr)
     if (ret < 0)
     {
         printf("i2c: Failed to set i2c device address 0x%x\n",i2c_addr);
-        return 1;
+        return -1;
     }
 
     printf("i2c: set i2c device address success\n");
@@ -197,7 +197,7 @@ static int i2c_read(int fd, unsigned char addr, unsigned char reg, unsigned char
 }
 
 
-int tps65987_i2c_write(int fd, unsigned char dev_addr, unsigned char reg, unsigned char *val, unsigned char data_len)
+int tps65987_i2c_write(unsigned char dev_addr, unsigned char reg, unsigned char *val, unsigned char data_len)
 {
     unsigned char buf[80] = {0};
     int i;
@@ -207,7 +207,7 @@ int tps65987_i2c_write(int fd, unsigned char dev_addr, unsigned char reg, unsign
     if(data_len + 2 >= 80)
     {
         printf("data_len_exceed\n");
-        return 1;
+        return -1;
     }
 
     buf[0] = reg;
@@ -223,11 +223,11 @@ int tps65987_i2c_write(int fd, unsigned char dev_addr, unsigned char reg, unsign
         return 0;
     }
 
-    return 1;
+    return -1;
 }
 
 
-int tps65987_i2c_read(int fd, unsigned char addr, unsigned char reg, unsigned char *val, unsigned char data_len)
+int tps65987_i2c_read(unsigned char addr, unsigned char reg, unsigned char *val, unsigned char data_len)
 {
     unsigned char buf[80] = {0};
     int i;
@@ -235,7 +235,7 @@ int tps65987_i2c_read(int fd, unsigned char addr, unsigned char reg, unsigned ch
     if(data_len + 1 >= 80)
     {
         printf("data_len_exceed\n");
-        return 1;
+        return -1;
     }
 
     if(i2c_read(fd, addr, reg, buf, data_len+1) == 0)
@@ -251,11 +251,11 @@ int tps65987_i2c_read(int fd, unsigned char addr, unsigned char reg, unsigned ch
         return 0;
     }
 
-    return 1;
+    return -1;
 }
 
 
-int tps65987_send_4CC_Cmd(unsigned char *cmd_ptr, unsigned char *cmd_data_ptr, unsigned char cmd_data_length)
+static int tps65987_send_4CC_Cmd(unsigned char *cmd_ptr, unsigned char *cmd_data_ptr, unsigned char cmd_data_length)
 {
     int ret;
     int i;
@@ -265,12 +265,12 @@ int tps65987_send_4CC_Cmd(unsigned char *cmd_ptr, unsigned char *cmd_data_ptr, u
     //first write 4CC Cmd Used Data(if any)
     if(cmd_data_ptr != NULL)
     {
-        ret = tps65987_i2c_write(fd, I2C_ADDR, 0x09, cmd_data_ptr, cmd_data_length);
+        ret = tps65987_i2c_write(I2C_ADDR, 0x09, cmd_data_ptr, cmd_data_length);
 
         if(ret != 0)
         {
             printf("write 4CC Cmd Used Data err \n");
-            return 1;
+            return -1;
         }
     }
 
@@ -287,11 +287,11 @@ int tps65987_send_4CC_Cmd(unsigned char *cmd_ptr, unsigned char *cmd_data_ptr, u
     printf("\n");
 
     //write 4CC Cmd
-    return tps65987_i2c_write(fd, I2C_ADDR, 0x08, val, 4);
+    return tps65987_i2c_write(I2C_ADDR, 0x08, val, 4);
 }
 
 
-int tps65987_check_4CC_Cmd_executed()
+static int tps65987_check_4CC_Cmd_executed()
 {
     int i;
 
@@ -306,7 +306,7 @@ int tps65987_check_4CC_Cmd_executed()
     {
         usleep(10000);
 
-        tps65987_i2c_read(fd, I2C_ADDR, 0x08, buf, 4);
+        tps65987_i2c_read(I2C_ADDR, 0x08, buf, 4);
 
         if(memcmp(buf,Cmd_exec_success,4) == 0)
         {
@@ -323,19 +323,19 @@ int tps65987_check_4CC_Cmd_executed()
         if(memcmp(buf,Cmd_unrecognized,4) == 0)
         {
             printf("4CC Cmd unrecognized, %d\n", i);
-            return 1;
+            return -1;
         }
     }
 
     printf("4CC Cmd exec timeout, %d\n", i);
-    return 1;
+    return -1;
 
 }
 
 
-int tps65987_read_4CC_Cmd_exec_output(unsigned char *cmd_data_ptr, unsigned char cmd_data_length)
+static int tps65987_read_4CC_Cmd_exec_output(unsigned char *cmd_data_ptr, unsigned char cmd_data_length)
 {
-    return tps65987_i2c_read(fd, I2C_ADDR, 0x09, cmd_data_ptr, cmd_data_length);
+    return tps65987_i2c_read(I2C_ADDR, 0x09, cmd_data_ptr, cmd_data_length);
 }
 
 
@@ -345,7 +345,7 @@ int tps65987_exec_4CC_Cmd(unsigned char *cmd_ptr, unsigned char *cmd_data_in_ptr
     if(tps65987_send_4CC_Cmd(cmd_ptr, cmd_data_in_ptr, cmd_data_in_length) != 0)
     {
         printf("send_4CC_Cmd err\n");
-        return 1;
+        return -1;
     }
 
     if( strcmp(cmd_ptr,"Gaid") == 0 || strcmp(cmd_ptr,"GAID") == 0 )
@@ -357,7 +357,7 @@ int tps65987_exec_4CC_Cmd(unsigned char *cmd_ptr, unsigned char *cmd_data_in_ptr
         if(tps65987_check_4CC_Cmd_executed() != 0)
         {
             printf("4CC_Cmd exec err\n");
-            return 1;
+            return -1;
         }
     }
 
@@ -367,7 +367,7 @@ int tps65987_exec_4CC_Cmd(unsigned char *cmd_ptr, unsigned char *cmd_data_in_ptr
         if(tps65987_read_4CC_Cmd_exec_output(cmd_data_out_ptr, cmd_data_out_length) != 0)
         {
             printf("read 4CC_Cmd exec output err\n");
-            return 1;
+            return -1;
         }
     }
 
@@ -379,8 +379,8 @@ int tps65987_host_patch_bundle(void)
 {
     unsigned char buf[64] = {0};
 
-    tps65987_i2c_read(fd, I2C_ADDR, 0x14, buf, 11);
-    tps65987_i2c_read(fd, I2C_ADDR, 0x15, buf, 11);
+    tps65987_i2c_read(I2C_ADDR, 0x14, buf, 11);
+    tps65987_i2c_read(I2C_ADDR, 0x15, buf, 11);
 
     tps65987_send_4CC_Cmd("PTCq", 0, 0);
     tps65987_check_4CC_Cmd_executed();
@@ -395,14 +395,14 @@ int tps65987_host_patch_bundle(void)
     tps65987_send_4CC_Cmd("Gaid", 0, 0);
     tps65987_check_4CC_Cmd_executed();
 
-    tps65987_i2c_read(fd, I2C_ADDR, 0x14, buf, 11);
-    tps65987_i2c_read(fd, I2C_ADDR, 0x15, buf, 11);
+    tps65987_i2c_read(I2C_ADDR, 0x14, buf, 11);
+    tps65987_i2c_read(I2C_ADDR, 0x15, buf, 11);
 
     tps65987_send_4CC_Cmd("PTCs", 0, 0);
     tps65987_check_4CC_Cmd_executed();
 
-    tps65987_i2c_read(fd, I2C_ADDR, 0x14, buf, 11);
-    tps65987_i2c_read(fd, I2C_ADDR, 0x15, buf, 11);
+    tps65987_i2c_read(I2C_ADDR, 0x14, buf, 11);
+    tps65987_i2c_read(I2C_ADDR, 0x15, buf, 11);
 }
 
 /*
@@ -411,7 +411,6 @@ int tps65987_host_patch_bundle(void)
 static int PreOpsForFlashUpdate(void);
 static int StartFlashUpdate(void);
 static int UpdateAndVerifyRegion(unsigned char region_number);
-static int ResetPDController();
 
 
 static int PreOpsForFlashUpdate(void)
@@ -422,7 +421,7 @@ static int PreOpsForFlashUpdate(void)
     s_TPS_bootflag *p_bootflags = NULL;
     s_TPS_portconfig *p_portconfig = NULL;
 
-    tps65987_i2c_read(fd, I2C_ADDR, REG_Version, buf, 4);
+    tps65987_i2c_read(I2C_ADDR, REG_Version, buf, 4);
 
     printf("tps65987 check version\n");
 
@@ -432,7 +431,7 @@ static int PreOpsForFlashUpdate(void)
     * boot didn't succeed
     * - Note #2: Flash-update shall be attempted on the inactive region first
     */
-    tps65987_i2c_read(fd, I2C_ADDR, REG_BootFlags, buf, 12);
+    tps65987_i2c_read(I2C_ADDR, REG_BootFlags, buf, 12);
 
     p_bootflags = (s_TPS_bootflag *)&buf[0];
 
@@ -442,7 +441,7 @@ static int PreOpsForFlashUpdate(void)
     if(p_bootflags->PatchHeaderErr != 0)
     {
         printf("PatchHeaderErr\n");
-        return 1;
+        return -1;
     }
 
     /*
@@ -471,9 +470,9 @@ static int PreOpsForFlashUpdate(void)
     else
     {
         printf("Region Check Err\n");
-        return 1;
+        return -1;
 
-        //need further debug 
+        //need further debug
         /*printf("force upgrade REGION_0\n");
         flash_upgrade_para.active_region = REGION_1;
         flash_upgrade_para.inactive_region = REGION_0;*/
@@ -482,7 +481,7 @@ static int PreOpsForFlashUpdate(void)
     /*
     * Keep the port disabled during the flash-update
     */
-    tps65987_i2c_read(fd, I2C_ADDR, REG_PORTCONFIG, buf, 8);
+    tps65987_i2c_read(I2C_ADDR, REG_PORTCONFIG, buf, 8);
 
     p_portconfig = (s_TPS_portconfig *)&buf[0];
 
@@ -491,11 +490,11 @@ static int PreOpsForFlashUpdate(void)
 
     p_portconfig->TypeCStateMachine = DISABLE_PORT;
 
-    tps65987_i2c_write(fd, I2C_ADDR, REG_PORTCONFIG, buf, 8);
+    tps65987_i2c_write(I2C_ADDR, REG_PORTCONFIG, buf, 8);
 
     printf("DISABLE TYPE-C PORT\n");
 
-    tps65987_i2c_read(fd, I2C_ADDR, REG_PORTCONFIG, buf, 8); //just for check
+    tps65987_i2c_read(I2C_ADDR, REG_PORTCONFIG, buf, 8); //just for check
 
     return 0;
 }
@@ -516,7 +515,7 @@ static int StartFlashUpdate(void)
     {
         printf("Region[%d] update failed.! Next boot will happen from Region[%d]\n\r",\
                flash_upgrade_para.inactive_region, flash_upgrade_para.active_region);
-        retVal = 0;
+        retVal = -1;
         goto error;
     }
 
@@ -533,7 +532,7 @@ static int StartFlashUpdate(void)
     {
         printf("Region[%d] update failed.! Next boot will happen from Region[%d]\n\r",\
                flash_upgrade_para.active_region, flash_upgrade_para.inactive_region);
-        retVal = 0;
+        retVal = -1;
         goto error;
     }
 
@@ -715,10 +714,9 @@ static int UpdateAndVerifyRegion(unsigned char region_number)
     return 0;
 }
 
-static int ResetPDController()
+int ResetPDController()
 {
     unsigned char buf[64] = {0};
-    int retVal = -1;
 
     /*
     * Execute GAID, and wait for reset to complete
@@ -729,11 +727,11 @@ static int ResetPDController()
     usleep(1000000);
 
     //read Mode
-    tps65987_i2c_read(fd, I2C_ADDR, REG_MODE, buf, 4);
+    tps65987_i2c_read(I2C_ADDR, REG_MODE, buf, 4);
 
-    tps65987_i2c_read(fd, I2C_ADDR, REG_Version, buf, 4);
+    tps65987_i2c_read(I2C_ADDR, REG_Version, buf, 4);
 
-    tps65987_i2c_read(fd, I2C_ADDR, REG_BootFlags, buf, 12);
+    tps65987_i2c_read(I2C_ADDR, REG_BootFlags, buf, 12);
 
     return 0;
 }
@@ -741,14 +739,52 @@ static int ResetPDController()
 
 int tps65987_ext_flash_upgrade(void)
 {
-    if(PreOpsForFlashUpdate() == 0)
+    int retVal;
+
+    if(PreOpsForFlashUpdate() != 0)
     {
-        return StartFlashUpdate();
+        printf("Pre Ops For FlashUpdate fail\n\r");
+        return -1;
     }
 
-    return 1;
+    if(StartFlashUpdate() == 0)
+    {
+        retVal = 0;
+        printf("FlashUpdate success\n\r");
+    }
+    else
+    {
+        retVal = -1;
+        printf("FlashUpdate fail\n\r");
+    }
+
+    ResetPDController();
+
+    return retVal;
 }
 
+int tps65987_get_Status(s_TPS_status *p_tps_status)
+{
+    unsigned char buf[64] = {0};
+
+    if(tps65987_i2c_read(I2C_ADDR, REG_Status, (unsigned char*)p_tps_status, 8) == 0)
+    {
+        printf("get tps65987 Status: \n");
+        printf("PlugPresent: %d\n", p_tps_status->PlugPresent);
+        printf("ConnState: %d\n", p_tps_status->ConnState);
+        printf("PlugOrientation: %d\n", p_tps_status->PlugOrientation);
+        printf("PortRole: %d\n", p_tps_status->PortRole);
+        printf("DataRole: %d\n", p_tps_status->DataRole);
+        printf("VbusStatus: %d\n", p_tps_status->VbusStatus);
+        printf("UsbHostPresent: %d\n", p_tps_status->UsbHostPresent);
+        printf("HighVoltageWarning: %d\n", p_tps_status->HighVoltageWarning);
+        printf("LowVoltageWarning: %d\n", p_tps_status->LowVoltageWarning);
+
+        return 0;
+    }
+
+    return -1;
+}
 
 int main(int argc, char* argv[])
 {
@@ -759,6 +795,8 @@ int main(int argc, char* argv[])
     unsigned char buf[64] = {0};
     unsigned char buf_2[64] = {0};
     unsigned char val[64] = {0};
+
+    s_TPS_status tps_status = {0};
 
     memset(val, 0x55, sizeof(val));
 
@@ -783,25 +821,28 @@ int main(int argc, char* argv[])
 
     check_endian();
 
-    i2c_open(I2C_ADDR);
+    if(i2c_open(I2C_ADDR) != 0)
+    {
+        return -1;
+    }
 
     //test read
-    tps65987_i2c_read(fd, I2C_ADDR, 0x00, buf, 4);
-    tps65987_i2c_read(fd, I2C_ADDR, 0x05, buf, 16);
-    tps65987_i2c_read(fd, I2C_ADDR, 0x0f, buf, 4);
+    tps65987_i2c_read(I2C_ADDR, 0x00, buf, 4);
+    tps65987_i2c_read(I2C_ADDR, 0x05, buf, 16);
+    tps65987_i2c_read(I2C_ADDR, 0x0f, buf, 4);
 
     //test read and write
     val[0] = 0x04;
-    tps65987_i2c_write(fd, I2C_ADDR, 0x70, &val[0], 1);
+    tps65987_i2c_write(I2C_ADDR, 0x70, &val[0], 1);
     usleep(10000);
-    tps65987_i2c_read(fd, I2C_ADDR, 0x70, buf, 1);
+    tps65987_i2c_read(I2C_ADDR, 0x70, buf, 1);
 
     //tps65987_host_patch_bundle();
 
     tps65987_ext_flash_upgrade();
 
-    tps65987_i2c_read(fd, I2C_ADDR, REG_Version, buf, 4);
-    tps65987_i2c_read(fd, I2C_ADDR, REG_BootFlags, buf, 12);
+    tps65987_i2c_read(I2C_ADDR, REG_Version, buf, 4);
+    tps65987_i2c_read(I2C_ADDR, REG_BootFlags, buf, 12);
 
     //buf[0] = 0x01;
     //tps65987_exec_4CC_Cmd("FLrr", buf, 1, buf_2, 4);
@@ -809,7 +850,9 @@ int main(int argc, char* argv[])
     //buf[0] = 0x00;
     //tps65987_exec_4CC_Cmd("FLrr", buf, 1, buf_2, 4);
 
-    ResetPDController();
+    //ResetPDController();
+
+    tps65987_get_Status(&tps_status);
 
     close(fd);
 
