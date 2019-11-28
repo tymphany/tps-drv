@@ -17981,10 +17981,6 @@ ACE_register_definition_metadata_json_delimiter{
         "adapter": "TIVA"
     }, 
     "template properties": {
-        "Mux Type": "All", 
-        "Description": "TPS65987D Standard\n\nConfigured for TPS65988 EVM with 87D EVM factory-default jumper settings.  May be configured for UFP, DFP or DRP, with or without Thunderbolt support. based on answers to user questions.  Uses PP2 for Sourcing when applicable.  Sources 5, 9, 15 and 20V using an adjustable voltage regulator when applicable. \n\nThis is a standard customer template that exposes the most commonly used settings.  Hidden settings are either set to default values or derived from exposed user inputs.  For access to all host interface fields, use the advanced customer template.  Note that you may begin with a standard customer template and import your settings into the advanced template later.\n\n", 
-        "Template Version": "6.1.1", 
-        "Port Type": "All", 
         "Config Question List": [
             {
                 "Question": "What is the port type of the design?", 
@@ -18008,6 +18004,10 @@ ACE_register_definition_metadata_json_delimiter{
                 ]
             }
         ], 
+        "Description": "TPS65987D Standard\n\nConfigured for TPS65988 EVM with 87D EVM factory-default jumper settings.  May be configured for UFP, DFP or DRP, with or without Thunderbolt support. based on answers to user questions.  Uses PP2 for Sourcing when applicable.  Sources 5, 9, 15 and 20V using an adjustable voltage regulator when applicable. \n\nThis is a standard customer template that exposes the most commonly used settings.  Hidden settings are either set to default values or derived from exposed user inputs.  For access to all host interface fields, use the advanced customer template.  Note that you may begin with a standard customer template and import your settings into the advanced template later.\n\n", 
+        "Template Version": "6.1.1", 
+        "Port Type": "All", 
+        "Mux Type": "All", 
         "Category Type": "Standard Customer Project", 
         "Device Type": "TPS65987DDH", 
         "Display As": "TPS65987DDH (Standard)", 
