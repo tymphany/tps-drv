@@ -117,9 +117,16 @@ typedef  struct
 
 #define  DISABLE_PORT   0x03
 
-int tps65987_i2c_write(unsigned char dev_addr, unsigned char reg, unsigned char *val, unsigned char data_len);
-int tps65987_i2c_read(unsigned char addr, unsigned char reg, unsigned char *val, unsigned char data_len);
-int tps65987_exec_4CC_Cmd(unsigned char *cmd_ptr, unsigned char *cmd_data_in_ptr, unsigned char cmd_data_in_length, unsigned char *cmd_data_out_ptr, unsigned char cmd_data_out_length);
+
+enum
+{
+    SINK = 0,
+    SOURCE = 1,
+
+} TPS_Port_Role;
+
+int i2c_open_tps65987(unsigned char i2c_addr);
 int ResetPDController();
 int tps65987_ext_flash_upgrade(void);
+int tps65987_get_Status(s_TPS_status *p_tps_status);
 

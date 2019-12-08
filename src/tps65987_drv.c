@@ -77,7 +77,7 @@ struct FLASH_UPGRADE_PARA
 static int fd;
 
 
-static int i2c_open(unsigned char i2c_addr)
+int i2c_open_tps65987(unsigned char i2c_addr)
 {
     int ret;
 
@@ -763,6 +763,7 @@ int tps65987_ext_flash_upgrade(void)
     return retVal;
 }
 
+
 int tps65987_get_Status(s_TPS_status *p_tps_status)
 {
     unsigned char buf[64] = {0};
@@ -773,8 +774,30 @@ int tps65987_get_Status(s_TPS_status *p_tps_status)
         printf("PlugPresent: %d\n", p_tps_status->PlugPresent);
         printf("ConnState: %d\n", p_tps_status->ConnState);
         printf("PlugOrientation: %d\n", p_tps_status->PlugOrientation);
-        printf("PortRole: %d\n", p_tps_status->PortRole);
+        printf("PortRole: ");
+        switch(p_tps_status->PortRole)
+        {
+            case 0:
+                printf("Sink, %d\n", p_tps_status->PortRole);
+                break;
+
+            case 1:
+                printf("Source, %d\n", p_tps_status->PortRole);
+                break;
+        }
+
         printf("DataRole: %d\n", p_tps_status->DataRole);
+        switch(p_tps_status->DataRole)
+        {
+            case 0:
+                printf("UFP, %d\n", p_tps_status->DataRole);
+                break;
+
+            case 1:
+                printf("DFP, %d\n", p_tps_status->DataRole);
+                break;
+        }
+
         printf("VbusStatus: %d\n", p_tps_status->VbusStatus);
         printf("UsbHostPresent: %d\n", p_tps_status->UsbHostPresent);
         printf("HighVoltageWarning: %d\n", p_tps_status->HighVoltageWarning);
@@ -785,6 +808,71 @@ int tps65987_get_Status(s_TPS_status *p_tps_status)
 
     return -1;
 }
+
+
+int tps65987_get_PortRole(void)
+{
+    s_TPS_status tps_status = {0};
+
+    s_TPS_status *p_tps_status = NULL;
+
+    p_tps_status = &tps_status;
+
+    if(tps65987_i2c_read(I2C_ADDR, REG_Status, (unsigned char*)p_tps_status, 8) == 0)
+    {
+        printf("get tps65987 Status: \n");
+        printf("PlugPresent: %d\n", p_tps_status->PlugPresent);
+        printf("ConnState: %d\n", p_tps_status->ConnState);
+        printf("PlugOrientation: %d\n", p_tps_status->PlugOrientation);
+        printf("PortRole: ");
+        switch(p_tps_status->PortRole)
+        {
+            case 0:
+                printf("Sink, %d\n", p_tps_status->PortRole);
+                break;
+
+            case 1:
+                printf("Source, %d\n", p_tps_status->PortRole);
+                break;
+        }
+
+        printf("DataRole: %d\n", p_tps_status->DataRole);
+        switch(p_tps_status->DataRole)
+        {
+            case 0:
+                printf("UFP, %d\n", p_tps_status->DataRole);
+                break;
+
+            case 1:
+                printf("DFP, %d\n", p_tps_status->DataRole);
+                break;
+        }
+
+        printf("VbusStatus: %d\n", p_tps_status->VbusStatus);
+        printf("UsbHostPresent: %d\n", p_tps_status->UsbHostPresent);
+        printf("HighVoltageWarning: %d\n", p_tps_status->HighVoltageWarning);
+        printf("LowVoltageWarning: %d\n", p_tps_status->LowVoltageWarning);
+
+        //return PortRole
+        switch(p_tps_status->PortRole)
+        {
+            case 0:
+                printf("Sink, %d\n\n", p_tps_status->PortRole);
+                return SINK;
+
+            case 1:
+                printf("Source, %d\n\n", p_tps_status->PortRole);
+                return SOURCE;
+
+            default:
+                printf("value err, %d\n\n", p_tps_status->PortRole);
+                return -1;
+        }
+    }
+
+    return -1;
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -797,6 +885,8 @@ int main(int argc, char* argv[])
     unsigned char val[64] = {0};
 
     s_TPS_status tps_status = {0};
+
+    int tps_port_role;
 
     memset(val, 0x55, sizeof(val));
 
@@ -821,7 +911,7 @@ int main(int argc, char* argv[])
 
     check_endian();
 
-    if(i2c_open(I2C_ADDR) != 0)
+    if(i2c_open_tps65987(I2C_ADDR) != 0)
     {
         return -1;
     }
@@ -850,9 +940,16 @@ int main(int argc, char* argv[])
     //buf[0] = 0x00;
     //tps65987_exec_4CC_Cmd("FLrr", buf, 1, buf_2, 4);
 
-    //ResetPDController();
+    ResetPDController();
 
-    tps65987_get_Status(&tps_status);
+    /*while(1)
+    {
+        tps_port_role = tps65987_get_PortRole();
+
+        //tps65987_get_Status(&tps_status);
+
+        sleep(8);
+    }*/
 
     close(fd);
 
