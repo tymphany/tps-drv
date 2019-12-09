@@ -564,6 +564,18 @@ static int UpdateAndVerifyRegion(unsigned char region_number)
     unsigned int regAddr = 0;
 
     /*
+    * should first check whether the upgrade bin file is exist
+    */
+    fp = fopen("/tmp/low-region-flash.bin","rb");
+    if(fp == NULL)
+    {
+        printf("fail to open tps65987 upgrade bin file\n");
+        return -1;
+    }
+
+    printf("open tps65987 upgrade bin file success\n");
+
+    /*
     * Get the location of the region 'region_number'
     */
     flrrInData.regionnum = region_number;
@@ -626,14 +638,15 @@ static int UpdateAndVerifyRegion(unsigned char region_number)
         switch(flash_upgrade_para.flash_upgrade_state)
         {
             case OPEN_FILE:
-                fp = fopen("low-region-flash.bin","rb");
+                //already opened
+                /*fp = fopen("/tmp/low-region-flash.bin","rb");
                 if(fp == NULL)
                 {
                     printf("fail to open tps65987 upgrade bin file\n");
                     return 1;
                 }
 
-                printf("open tps65987 upgrade bin file success\n");
+                printf("open tps65987 upgrade bin file success\n");*/
 
                 flash_upgrade_para.flash_upgrade_state = READ_FILE;
                 break;
@@ -940,7 +953,9 @@ int main(int argc, char* argv[])
     //buf[0] = 0x00;
     //tps65987_exec_4CC_Cmd("FLrr", buf, 1, buf_2, 4);
 
-    ResetPDController();
+    //ResetPDController();
+
+    tps65987_get_Status(&tps_status);
 
     /*while(1)
     {
