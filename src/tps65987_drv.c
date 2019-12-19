@@ -887,6 +887,82 @@ int tps65987_get_PortRole(void)
 }
 
 
+int tps65987_get_RXSourceNumValidPDOs(void)
+{
+    unsigned char buf[64] = {0};
+
+    unsigned char valid_PDO_num = 0;
+
+    if(tps65987_i2c_read(I2C_ADDR, REG_RX_Source_Capabilities, buf, 29) != 0)
+    {
+        printf("get RXSourceNumValidPDOs err \n");
+        return -1;
+    }
+
+    valid_PDO_num = buf[0] & 0x03;
+
+    printf("get RXSourceNumValidPDOs = %d\n\n", valid_PDO_num);
+
+    return valid_PDO_num;
+}
+
+
+int tps65987_get_TypeC_Current(void)
+{
+    s_TPS_Power_Status tps_power_status = {0};
+
+    s_TPS_Power_Status *p_tps_power_status = NULL;
+
+    p_tps_power_status = &tps_power_status;
+
+    if(tps65987_i2c_read(I2C_ADDR, REG_Power_Status, (unsigned char*)p_tps_power_status, 2) == 0)
+    {
+        printf("get tps65987 Power Status: \n");
+        printf("PowerConnection: %d\n", p_tps_power_status->PowerConnection);
+        printf("SourceSink: ");
+        switch(p_tps_power_status->SourceSink)
+        {
+            case 0:
+                printf("PD Controller as source, %d\n", p_tps_power_status->SourceSink);
+                break;
+
+            case 1:
+                printf("PD Controller as sink, %d\n", p_tps_power_status->SourceSink);
+                break;
+        }
+
+        printf("TypeC_Current: ");
+        switch(p_tps_power_status->TypeC_Current)
+        {
+            case USB_Default_Current:
+                printf("USB Default Current, %d\n", p_tps_power_status->TypeC_Current);
+                break;
+
+            case C_1d5A_Current:
+                printf("1.5A, %d\n", p_tps_power_status->TypeC_Current);
+                break;
+
+            case C_3A_Current:
+                printf("3A, %d\n", p_tps_power_status->TypeC_Current);
+                break;
+
+            case PD_contract_negotiated:
+                printf("PD contract negotiated, %d\n", p_tps_power_status->TypeC_Current);
+                break;
+        }
+
+        printf("Charger Detect Status: %d\n", p_tps_power_status->Charger_Detect_Status);
+        printf("Charger_AdvertiseStatus: %d\n\n", p_tps_power_status->Charger_AdvertiseStatus);
+
+        //return TypeC_Current
+        return p_tps_power_status->TypeC_Current;
+
+    }
+
+    return -1;
+}
+
+
 int main(int argc, char* argv[])
 {
     int i;
@@ -962,6 +1038,8 @@ int main(int argc, char* argv[])
         tps_port_role = tps65987_get_PortRole();
 
         //tps65987_get_Status(&tps_status);
+
+        tps65987_get_TypeC_Current();
 
         sleep(8);
     }*/

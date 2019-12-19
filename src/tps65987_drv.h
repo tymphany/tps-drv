@@ -9,11 +9,15 @@
 #include<stdio.h>
 #include<stdlib.h>
 
-#define  REG_MODE               0x03
-#define  REG_Version            0x0F
-#define  REG_Status             0x1A
-#define  REG_PORTCONFIG         0x28
-#define  REG_BootFlags          0x2D
+#define  REG_MODE                       0x03
+#define  REG_Version                    0x0F
+#define  REG_Status                     0x1A
+#define  REG_PORTCONFIG                 0x28
+#define  REG_BootFlags                  0x2D
+#define  REG_RX_Source_Capabilities     0x30
+#define  REG_Power_Status               0x3F
+
+
 
 typedef struct
 {
@@ -89,6 +93,35 @@ typedef struct
 
 } s_TPS_status;
 
+enum
+{
+    SINK = 0,
+    SOURCE = 1,
+
+} TPS_Port_Role;
+
+
+typedef struct
+{
+    unsigned int  PowerConnection           :1;
+    unsigned int  SourceSink                :1;
+    unsigned int  TypeC_Current             :2;
+    unsigned int  Charger_Detect_Status     :4;
+
+    unsigned int  Charger_AdvertiseStatus   :2;
+    unsigned int  Reserved0                 :6;
+
+} s_TPS_Power_Status;
+
+enum
+{
+    USB_Default_Current = 0,
+    C_1d5A_Current = 1,
+    C_3A_Current = 2,
+    PD_contract_negotiated = 3,
+
+} TPS_TypeC_Current_Type;
+
 
 typedef  struct
 {
@@ -118,15 +151,10 @@ typedef  struct
 #define  DISABLE_PORT   0x03
 
 
-enum
-{
-    SINK = 0,
-    SOURCE = 1,
-
-} TPS_Port_Role;
-
 int i2c_open_tps65987(unsigned char i2c_addr);
 int ResetPDController();
 int tps65987_ext_flash_upgrade(void);
 int tps65987_get_Status(s_TPS_status *p_tps_status);
+int tps65987_get_RXSourceNumValidPDOs(void);
+int tps65987_get_TypeC_Current(void);
 
