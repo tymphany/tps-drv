@@ -19,12 +19,16 @@
 
 #include "tps65987_drv.h"
 
-#define I2C_FILE_NAME   "/dev/i2c-2"
+#define I2C_FILE_NAME   "/dev/i2c-3"
 //#define I2C_ADDR        0x38
 //#define I2C_ADDR        0x20
 
-//the I2C addr will change, 0x38 or 0x20
-unsigned int I2C_ADDR = 0x20;
+/*the I2C addr will change, 0x38 or 0x20
+  i2c1 cab be master/slave, address is 0x20
+  i2c2 is only slave, address is 0x38
+*/
+
+unsigned int I2C_ADDR = 0x38;
 
 //supposed to be Little-endian
 int check_endian(void)
@@ -566,7 +570,7 @@ static int UpdateAndVerifyRegion(unsigned char region_number)
     /*
     * should first check whether the upgrade bin file is exist
     */
-    fp = fopen("/tmp/low-region-flash.bin","rb");
+    fp = fopen("/data/ota-file/low-region-flash.bin","rb");
     if(fp == NULL)
     {
         printf("fail to open tps65987 upgrade bin file\n");
