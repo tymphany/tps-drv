@@ -19,9 +19,8 @@
 
 #include "tps65987_drv.h"
 
-#define I2C_FILE_NAME   "/dev/i2c-3"
-//#define I2C_ADDR        0x38
-//#define I2C_ADDR        0x20
+#define OTA_FILE_NAME "/data/ota-file/low-region-flash-"
+#define OTA_FILE_NAME1 ".bin"
 
 /*the I2C addr will change, 0x38 or 0x20
   i2c1 cab be master/slave, address is 0x20
@@ -81,13 +80,13 @@ struct FLASH_UPGRADE_PARA
 static int fd;
 
 
-int i2c_open_tps65987(unsigned char i2c_addr)
+int i2c_open_tps65987(unsigned char i2c_addr,char *i2c_file_name)
 {
     int ret;
 
     int val;
 
-    fd = open(I2C_FILE_NAME, O_RDWR);
+    fd = open(i2c_file_name, O_RDWR);
 
     if(fd < 0)
     {
@@ -413,8 +412,8 @@ int tps65987_host_patch_bundle(void)
 * function for flash upgrade
 */
 static int PreOpsForFlashUpdate(void);
-static int StartFlashUpdate(void);
-static int UpdateAndVerifyRegion(unsigned char region_number);
+static int StartFlashUpdate(char *ota_file_name);
+static int UpdateAndVerifyRegion(unsigned char region_number, char *ota_file_name);
 
 
 static int PreOpsForFlashUpdate(void)
@@ -504,7 +503,7 @@ static int PreOpsForFlashUpdate(void)
 }
 
 
-static int StartFlashUpdate(void)
+static int StartFlashUpdate(char *ota_file_name)
 {
     int retVal;
 
@@ -514,7 +513,7 @@ static int StartFlashUpdate(void)
     /*
     * Region-0 is currently active, hence update Region-1
     */
-    retVal = UpdateAndVerifyRegion(flash_upgrade_para.inactive_region);
+    retVal = UpdateAndVerifyRegion(flash_upgrade_para.inactive_region,ota_file_name);
     if(retVal != 0)
     {
         printf("Region[%d] update failed.! Next boot will happen from Region[%d]\n\r",\
@@ -531,7 +530,7 @@ static int StartFlashUpdate(void)
     printf("Region-%d is successfully updated.To maintain a redundant copy for a fail-safe flash-update, \
     copy the same content at Region-%d",flash_upgrade_para.inactive_region,flash_upgrade_para.active_region);
 
-    retVal = UpdateAndVerifyRegion(flash_upgrade_para.active_region);
+    retVal = UpdateAndVerifyRegion(flash_upgrade_para.active_region, ota_file_name);
     if(retVal != 0)
     {
         printf("Region[%d] update failed.! Next boot will happen from Region[%d]\n\r",\
@@ -546,7 +545,7 @@ error:
 }
 
 
-static int UpdateAndVerifyRegion(unsigned char region_number)
+static int UpdateAndVerifyRegion(unsigned char region_number, char *ota_file_name)
 {
     FILE *fp;
 
@@ -570,7 +569,7 @@ static int UpdateAndVerifyRegion(unsigned char region_number)
     /*
     * should first check whether the upgrade bin file is exist
     */
-    fp = fopen("/data/ota-file/low-region-flash.bin","rb");
+    fp = fopen(ota_file_name,"rb");
     if(fp == NULL)
     {
         printf("fail to open tps65987 upgrade bin file\n");
@@ -754,7 +753,7 @@ int ResetPDController()
 }
 
 
-int tps65987_ext_flash_upgrade(void)
+int tps65987_ext_flash_upgrade(char *ota_file_name)
 {
     int retVal;
 
@@ -764,7 +763,7 @@ int tps65987_ext_flash_upgrade(void)
         return -1;
     }
 
-    if(StartFlashUpdate() == 0)
+    if(StartFlashUpdate(ota_file_name) == 0)
     {
         retVal = 0;
         printf("FlashUpdate success\n\r");
@@ -966,16 +965,16 @@ int tps65987_get_TypeC_Current(void)
     return -1;
 }
 
-
 int main(int argc, char* argv[])
 {
-    int i;
-
+    int i,j;
     unsigned char reg = 0;
 
     unsigned char buf[64] = {0};
     unsigned char buf_2[64] = {0};
     unsigned char val[64] = {0};
+    unsigned char customeruse1[64] = {0};
+    unsigned char customeruse[64] ={0};
 
     s_TPS_status tps_status = {0};
 
@@ -1004,7 +1003,7 @@ int main(int argc, char* argv[])
 
     check_endian();
 
-    if(i2c_open_tps65987(I2C_ADDR) != 0)
+    if(i2c_open_tps65987(I2C_ADDR,argv[2]) != 0)
     {
         return -1;
     }
@@ -1014,6 +1013,23 @@ int main(int argc, char* argv[])
     tps65987_i2c_read(I2C_ADDR, 0x05, buf, 16);
     tps65987_i2c_read(I2C_ADDR, 0x0f, buf, 4);
 
+    tps65987_i2c_read(I2C_ADDR, 0x06, customeruse1, sizeof(customeruse1));
+    sprintf(customeruse,"%s%02x%s",OTA_FILE_NAME,customeruse1[0],OTA_FILE_NAME1);
+    printf("ota-file is %s\n",argv[3]);
+    printf("local-file is %s\n",customeruse);
+
+    printf("ota-file size is %ld\n",strlen(argv[3]));
+    printf("local-file size is %ld\n",strlen(customeruse));
+
+    printf("result is %d\n", strcmp(argv[3],customeruse));
+    if(strcmp(argv[3],customeruse) <= 0)
+    {
+       printf("version is old,version is %s\n",argv[3]);
+       return -1;
+    }
+    strcpy(customeruse,argv[3]);
+    printf("Have new version,version is %s\n",argv[3]);
+
     //test read and write
     val[0] = 0x04;
     tps65987_i2c_write(I2C_ADDR, 0x70, &val[0], 1);
@@ -1022,7 +1038,7 @@ int main(int argc, char* argv[])
 
     //tps65987_host_patch_bundle();
 
-    tps65987_ext_flash_upgrade();
+    tps65987_ext_flash_upgrade(customeruse);
 
     tps65987_i2c_read(I2C_ADDR, REG_Version, buf, 4);
     tps65987_i2c_read(I2C_ADDR, REG_BootFlags, buf, 12);
