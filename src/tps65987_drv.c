@@ -967,6 +967,7 @@ int tps65987_get_TypeC_Current(void)
 
 int main(int argc, char* argv[])
 {
+    //FILE *fp;
     int i,j;
     unsigned char reg = 0;
 
@@ -979,11 +980,11 @@ int main(int argc, char* argv[])
     s_TPS_status tps_status = {0};
 
     int tps_port_role;
+    memset(val, 0x55, sizeof(val));
 
-	memset(val, 0x55, sizeof(val));
+    printf("start run tps65987-ota\n");
+    freopen("/data/tps65987-log.txt", "w", stdout);
 
-	printf("start run tps65987-ota\n");
-	freopen("/data/tps65987.txt","w","stdout");
     if(argc > 1)
     {
         for(i = 0; i < argc; i++)
@@ -1065,8 +1066,8 @@ int main(int argc, char* argv[])
 
         sleep(8);
     }*/
-    freopen("/dev/tty","w","stdout");
-	printf("end tps65987-ota\n");
+    freopen("/dev/tty","w",stdout);
+    printf("end tps65987-ota\n");
     close(fd);
 
     return 0;
