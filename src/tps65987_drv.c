@@ -980,8 +980,10 @@ int main(int argc, char* argv[])
 
     int tps_port_role;
 
-    memset(val, 0x55, sizeof(val));
+	memset(val, 0x55, sizeof(val));
 
+	printf("start run tps65987-ota\n");
+	freopen("/data/tps65987.txt","w","stdout");
     if(argc > 1)
     {
         for(i = 0; i < argc; i++)
@@ -1063,7 +1065,8 @@ int main(int argc, char* argv[])
 
         sleep(8);
     }*/
-
+    freopen("/dev/tty","w","stdout");
+	printf("end tps65987-ota\n");
     close(fd);
 
     return 0;
