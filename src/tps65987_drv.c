@@ -497,6 +497,7 @@ static int PreOpsForFlashUpdate(void)
 
     printf("DISABLE TYPE-C PORT\n");
 
+    sleep(3);
     tps65987_i2c_read(I2C_ADDR, REG_PORTCONFIG, buf, 8); //just for check
 
     return 0;
