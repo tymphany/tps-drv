@@ -1049,7 +1049,7 @@ int main(int argc, char* argv[])
 
     //tps65987_host_patch_bundle();
 
-    tps65987_ext_flash_upgrade(customeruse);
+    tps65987_ext_flash_upgrade(argv[3]);
 
     tps65987_i2c_read(I2C_ADDR, REG_Version, buf, 4);
     tps65987_i2c_read(I2C_ADDR, REG_BootFlags, buf, 12);
