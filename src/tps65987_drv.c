@@ -975,8 +975,8 @@ int main(int argc, char* argv[])
     unsigned char buf[64] = {0};
     unsigned char buf_2[64] = {0};
     unsigned char val[64] = {0};
-    unsigned char customeruse1[64] = {0};
-    unsigned char customeruse[64] ={0};
+    unsigned char customeruse1[128] = {0};
+    unsigned char customeruse[128] ={0};
 
     s_TPS_status tps_status = {0};
 
@@ -1034,7 +1034,7 @@ int main(int argc, char* argv[])
         printf("version is old,version is %s\n",argv[3]);
         return -1;
         }
-        strcpy(customeruse,argv[3]);
+        strncpy(customeruse,argv[3], 128); //Ryder: revised to  be safe
         printf("Have new version,version is %s\n",argv[3]);
     }else
     {
