@@ -573,7 +573,7 @@ static int UpdateAndVerifyRegion(unsigned char region_number, char *ota_file_nam
     fp = fopen(ota_file_name,"rb");
     if(fp == NULL)
     {
-        printf("fail to open tps65987 upgrade bin file\n");
+        printf("fail to open tps65987 upgrade bin file, ota file is %s.\n", ota_file_name);
         return -1;
     }
 
