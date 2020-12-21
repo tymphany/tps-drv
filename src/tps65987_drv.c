@@ -1028,7 +1028,7 @@ int main(int argc, char* argv[])
 
     printf("result is %d\n", strcmp(argv[3],customeruse));
 
-    if(strcmp(argv[4], "-f" != 0){
+    if(strcmp(argv[4], "-f") != 0){
         if(strcmp(argv[3],customeruse) <= 0)
         {
         printf("version is old,version is %s\n",argv[3]);
