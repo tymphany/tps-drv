@@ -1029,12 +1029,14 @@ int main(int argc, char* argv[])
     printf("result is %d\n", strcmp(argv[3],customeruse));
 
     if(strcmp(argv[4], "-f") != 0){
-        if(strcmp(argv[3],customeruse) <= 0)
+        printf("customer use is %s", customeruse);
+        if(strncmp(argv[3],customeruse, 127) <= 0)
         {
-        printf("version is old,version is %s\n",argv[3]);
-        return -1;
+            printf("version is old,version is %s\n",argv[3]);
+            return -1;
         }
-        strncpy(customeruse,argv[3], 128); //Ryder: revised to  be safe
+
+        strncpy(customeruse,argv[3], 127); //Ryder: revised to  be safe
         printf("Have new version,version is %s\n",argv[3]);
     }else
     {
