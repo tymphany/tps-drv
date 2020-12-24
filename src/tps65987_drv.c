@@ -975,8 +975,8 @@ int main(int argc, char* argv[])
     unsigned char buf[64] = {0};
     unsigned char buf_2[64] = {0};
     unsigned char val[64] = {0};
-    unsigned char customeruse1[128] = {0};
-    unsigned char customeruse[128] ={0};
+    unsigned char customeruse1[64] = {0};
+    unsigned char customeruse[64] ={0};
 
     s_TPS_status tps_status = {0};
 
@@ -1028,21 +1028,28 @@ int main(int argc, char* argv[])
 
     printf("result is %d\n", strcmp(argv[3],customeruse));
 
-    if(strcmp(argv[argc - 1], "-f") != 0)
-    {
-	    printf("customer use is %s", customeruse);
-	    printf("aragv3 is %s, len is %d", argv[3], strlen(argv[3]));
-	    if(strncmp(argv[3],customeruse, 127) <= 0)
-	    {
-		    printf("version is old,version is %s\n",argv[3]);
-		    return -1;
-	    }
+    printf("customer use is %s", customeruse);
+    printf("aragv3 is %s, len is %d", argv[3], strlen(argv[3]));
 
-	    strncpy(customeruse,argv[3], 127); //Ryder: revised to  be safe
-	    printf("Have new version,version is %s\n",argv[3]);
+	if(strcmp(argv[3],customeruse) <= 0)
+    {
+	    printf("version is old,version is %s\n",argv[3]);
+
+	    if(strcmp(argv[argc - 1], "-f") != 0)
+	    {
+
+		   return -1;
+
+	    }else{
+		    printf("Froced update  of tps65987 firmware.\n");
+	    }
     }else{
-	    printf("Froced update  of tps65987 firmware.\n");
-    }
+	 //   strcpy(customeruse,argv[3]);
+	    printf("Have new version,version is %s\n",argv[3]);
+	}
+
+
+
 
     //test read and write
     val[0] = 0x04;
