@@ -1028,20 +1028,20 @@ int main(int argc, char* argv[])
 
     printf("result is %d\n", strcmp(argv[3],customeruse));
 
-    if(argc >=4 && strcmp(argv[4], "-f") != 0){
-        printf("customer use is %s", customeruse);
-        printf("aragv3 is %s, len is %d", argv[3], strlen(argv[3]));
-        if(strncmp(argv[3],customeruse, 127) <= 0)
-        {
-            printf("version is old,version is %s\n",argv[3]);
-            return -1;
-        }
-
-        strncpy(customeruse,argv[3], 127); //Ryder: revised to  be safe
-        printf("Have new version,version is %s\n",argv[3]);
-    }else
+    if(strcmp(argv[argc - 1], "-f") != 0)
     {
-        printf("Froced update  of tps65987 firmware.\n");
+	    printf("customer use is %s", customeruse);
+	    printf("aragv3 is %s, len is %d", argv[3], strlen(argv[3]));
+	    if(strncmp(argv[3],customeruse, 127) <= 0)
+	    {
+		    printf("version is old,version is %s\n",argv[3]);
+		    return -1;
+	    }
+
+	    strncpy(customeruse,argv[3], 127); //Ryder: revised to  be safe
+	    printf("Have new version,version is %s\n",argv[3]);
+    }else{
+	    printf("Froced update  of tps65987 firmware.\n");
     }
 
     //test read and write
