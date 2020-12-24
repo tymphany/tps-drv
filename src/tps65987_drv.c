@@ -19,7 +19,7 @@
 
 #include "tps65987_drv.h"
 
-#define OTA_FILE_NAME "/data/ota-file/low-region-flash-"
+#define OTA_FILE_NAME "/data/ota-file/r1-low-region-flash-"
 #define OTA_FILE_NAME1 ".bin"
 
 /*the I2C addr will change, 0x38 or 0x20
@@ -573,7 +573,7 @@ static int UpdateAndVerifyRegion(unsigned char region_number, char *ota_file_nam
     fp = fopen(ota_file_name,"rb");
     if(fp == NULL)
     {
-        printf("fail to open tps65987 upgrade bin file\n");
+        printf("fail to open tps65987 upgrade bin file, ota file is %s.\n", ota_file_name);
         return -1;
     }
 
@@ -975,8 +975,8 @@ int main(int argc, char* argv[])
     unsigned char buf[64] = {0};
     unsigned char buf_2[64] = {0};
     unsigned char val[64] = {0};
-    unsigned char customeruse1[64] = {0};
-    unsigned char customeruse[64] ={0};
+    unsigned char customeruse1[128] = {0};
+    unsigned char customeruse[128] ={0};
 
     s_TPS_status tps_status = {0};
 
@@ -1017,6 +1017,7 @@ int main(int argc, char* argv[])
     tps65987_i2c_read(I2C_ADDR, 0x05, buf, 16);
     tps65987_i2c_read(I2C_ADDR, 0x0f, buf, 4);
 
+
     tps65987_i2c_read(I2C_ADDR, 0x06, customeruse1, sizeof(customeruse1));
     sprintf(customeruse,"%s%02x%s",OTA_FILE_NAME,customeruse1[0],OTA_FILE_NAME1);
     printf("ota-file is %s\n",argv[3]);
@@ -1026,13 +1027,22 @@ int main(int argc, char* argv[])
     printf("local-file size is %ld\n",strlen(customeruse));
 
     printf("result is %d\n", strcmp(argv[3],customeruse));
-    if(strcmp(argv[3],customeruse) <= 0)
+
+    if(strcmp(argv[argc - 1], "-f") != 0)
     {
-       printf("version is old,version is %s\n",argv[3]);
-       return -1;
+	    printf("customer use is %s", customeruse);
+	    printf("aragv3 is %s, len is %d", argv[3], strlen(argv[3]));
+	    if(strncmp(argv[3],customeruse, 127) <= 0)
+	    {
+		    printf("version is old,version is %s\n",argv[3]);
+		    return -1;
+	    }
+
+	    strncpy(customeruse,argv[3], 127); //Ryder: revised to  be safe
+	    printf("Have new version,version is %s\n",argv[3]);
+    }else{
+	    printf("Froced update  of tps65987 firmware.\n");
     }
-    strcpy(customeruse,argv[3]);
-    printf("Have new version,version is %s\n",argv[3]);
 
     //test read and write
     val[0] = 0x04;
@@ -1042,7 +1052,7 @@ int main(int argc, char* argv[])
 
     //tps65987_host_patch_bundle();
 
-    tps65987_ext_flash_upgrade(customeruse);
+    tps65987_ext_flash_upgrade(argv[3]);
 
     tps65987_i2c_read(I2C_ADDR, REG_Version, buf, 4);
     tps65987_i2c_read(I2C_ADDR, REG_BootFlags, buf, 12);
