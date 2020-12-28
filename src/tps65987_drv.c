@@ -1048,9 +1048,6 @@ int main(int argc, char* argv[])
 	    printf("Have new version,version is %s\n",argv[3]);
 	}
 
-
-
-
     //test read and write
     val[0] = 0x04;
     tps65987_i2c_write(I2C_ADDR, 0x70, &val[0], 1);
