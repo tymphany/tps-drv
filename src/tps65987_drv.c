@@ -1041,7 +1041,7 @@ int main(int argc, char* argv[])
 		   return -1;
 
 	    }else{
-		    printf("Froced update  of tps65987 firmware.\n");
+		    printf("Forced update of tps65987 firmware.\n");
 	    }
     }else{
 	 //   strcpy(customeruse,argv[3]);
@@ -1084,6 +1084,8 @@ int main(int argc, char* argv[])
     freopen("/dev/tty","w",stdout);
     printf("end tps65987-ota\n");
     close(fd);
+
+	system("/etc/exitscripts/board-script/reboot.sh");
 
     return 0;
 }
