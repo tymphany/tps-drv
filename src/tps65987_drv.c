@@ -1031,9 +1031,9 @@ int main(int argc, char* argv[])
     printf("customer use is %s", customeruse);
     printf("aragv3 is %s, len is %d", argv[3], strlen(argv[3]));
 
-	if(strcmp(argv[3],customeruse) <= 0)
+    if(strcmp(argv[3],customeruse) == 0)
     {
-	    printf("version is old,version is %s\n",argv[3]);
+	    printf("version is same, version is %s\n",argv[3]);
 
 	    if(strcmp(argv[argc - 1], "-f") != 0)
 	    {
@@ -1045,8 +1045,8 @@ int main(int argc, char* argv[])
 	    }
     }else{
 	 //   strcpy(customeruse,argv[3]);
-	    printf("Have new version,version is %s\n",argv[3]);
-	}
+	    printf("Have a different version,version is %s\n",argv[3]);
+    }
 
     //test read and write
     val[0] = 0x04;
