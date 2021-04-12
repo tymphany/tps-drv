@@ -1085,7 +1085,7 @@ int main(int argc, char* argv[])
     printf("end tps65987-ota\n");
     close(fd);
 
-	system("/etc/exitscripts/board-script/reboot.sh");
+    system("adk-message-send 'led_start_pattern{pattern:53}'");
 
     return 0;
 }
